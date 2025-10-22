@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>レシート記録アプリ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f6f8fb;
+            color: #333;
+        }
+        header {
+            background: #274690;
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        main {
+            max-width: 960px;
+            margin: 2rem auto;
+            padding: 0 1rem 3rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .card h2 {
+            margin-top: 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        input[type="file"] {
+            padding: 0.75rem;
+            border: 2px dashed #274690;
+            border-radius: 8px;
+            background: #f0f4ff;
+        }
+        button {
+            align-self: flex-start;
+            background: #274690;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1a2f5a;
+        }
+        .messages {
+            margin-bottom: 1rem;
+        }
+        .message {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .message.success {
+            background: #e6f4ea;
+            border: 1px solid #8bc34a;
+        }
+        .message.error {
+            background: #fdecea;
+            border: 1px solid #f28b82;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            border-bottom: 1px solid #dfe3eb;
+            text-align: left;
+            padding: 0.75rem;
+            vertical-align: top;
+        }
+        th {
+            background: #f0f4ff;
+        }
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+        .actions a {
+            color: white;
+            background: #009688;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+        .raw-text {
+            font-family: "SFMono-Regular", "Consolas", monospace;
+            white-space: pre-wrap;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 0.75rem;
+            border: 1px solid #eceff4;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            button {
+                width: 100%;
+            }
+            .actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>レシート記録アプリ</h1>
+    <p>レシート画像から店舗名・購入日・購入商品を読み取り、CSVで管理します。</p>
+</header>
+<main>
+    <section class="card">
+        <h2>レシートをアップロード</h2>
+        <div class="messages">
+            {% for category, message in messages %}
+                <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        <form method="post" enctype="multipart/form-data">
+            <label for="receipt">レシート画像ファイルを選択</label>
+            <input type="file" id="receipt" name="receipt" accept="image/*" required>
+            <button type="submit">アップロードして記録</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="actions">
+            <a href="{{ url_for('export_csv') }}">CSVをダウンロード</a>
+        </div>
+        <h2>登録済みレシート一覧</h2>
+        {% if receipts %}
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>店舗名</th>
+                    <th>購入日</th>
+                    <th>購入商品</th>
+                    <th>登録日時</th>
+                    <th>OCR結果</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for receipt in receipts %}
+                    <tr>
+                        <td>{{ receipt.id }}</td>
+                        <td>{{ receipt.store_name or '不明' }}</td>
+                        <td>{{ receipt.purchase_date or '不明' }}</td>
+                        <td>
+                            {% if receipt.items %}
+                                <ul>
+                                {% for item in receipt.items %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span>抽出できませんでした</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ receipt.created_at }}</td>
+                        <td>
+                            <details>
+                                <summary>全文を表示</summary>
+                                <div class="raw-text">{{ receipt.raw_text }}</div>
+                            </details>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>まだレシートは登録されていません。</p>
+        {% endif %}
+    </section>
+</main>
+</body>
+</html>
